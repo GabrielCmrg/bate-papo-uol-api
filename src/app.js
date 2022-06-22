@@ -20,8 +20,15 @@ client.connect().then(() => {
     console.log("Database selected");
 });
 
+app.post("/participants", (req, res) => {
+    const { name } = req.body;
+    
+    if (typeof(name) !== "string" || name.length === 0) {
+        res.sendStatus(422);
+        return;
+    }
+});
+
 app.listen(process.env.PORT, () => {
-    console.log(`App running on:\
-    http://localhost:${process.env.PORT}\
-    http://127.0.0.1:${process.env.PORT}`);
+    console.log(`App running on:\nhttp://localhost:${process.env.PORT}\nhttp://127.0.0.1:${process.env.PORT}`);
 });
