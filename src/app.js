@@ -12,9 +12,12 @@ app.use(cors());
 console.log("CORS enabled");
 
 const client = new MongoClient(process.env.MONGO_URI);
+console.log("Created client for mongo using " + process.env.MONGO_URI);
 let db = null;
 client.connect().then(() => {
+    console.log("Client connected");
     db = client.db("bate-papo-uol");
+    console.log("Database selected");
 });
 
 app.listen(process.env.PORT, () => {
