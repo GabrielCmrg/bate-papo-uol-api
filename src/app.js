@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 
 dotenv.config();
@@ -27,6 +28,24 @@ app.post('/participants', (req, res) => {
         res.sendStatus(422);
         return;
     }
+
+    db.collection('participants').findOne({ name }).then(participant => {
+        if (participant !== null) {
+            res.sendStatus(409);
+            return;
+        }
+
+        db.collection('participants').insertOne({ name, lastStatus: Date.now() }).then(() => {
+            db.collection('messages').insertOne({
+                from: name,
+                to: 'Todos',
+                text: 'entra na sala...',
+                type: 'status',
+                time: dayjs().format('HH:mm:ss'),
+            }).then(() => {res.sendStatus(201)});
+        });
+        
+    });
 });
 
 app.listen(process.env.PORT, () => {
