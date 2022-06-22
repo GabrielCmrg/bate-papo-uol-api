@@ -48,6 +48,12 @@ app.post('/participants', (req, res) => {
     });
 });
 
+app.get('/participants', (req, res) => {
+    db.collection('participants').find().toArray().then(participants => {
+        res.send(participants);
+    });
+});
+
 app.listen(process.env.PORT, () => {
     console.log(`App running on:\nhttp://localhost:${process.env.PORT}\nhttp://127.0.0.1:${process.env.PORT}`);
 });
