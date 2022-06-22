@@ -22,30 +22,46 @@ client.connect().then(() => {
 });
 
 app.post('/participants', (req, res) => {
+    console.log('POST request made to route /participants');
     const { name } = req.body;
     
     if (typeof(name) !== 'string' || name.length === 0) {
+        console.log('Name key received is invalid');
         res.sendStatus(422);
+        console.log('Response sent!');
         return;
     }
 
     db.collection('participants').findOne({ name }).then(participant => {
+        console.log('Done!');
         if (participant !== null) {
+            console.log(`Participant ${name} already exists`);
             res.sendStatus(409);
+            console.log('Response sent!');
             return;
         }
 
         db.collection('participants').insertOne({ name, lastStatus: Date.now() }).then(() => {
-            db.collection('messages').insertOne({
+            console.log('Done!');
+
+            const loginMessage = {
                 from: name,
                 to: 'Todos',
                 text: 'entra na sala...',
                 type: 'status',
                 time: dayjs().format('HH:mm:ss'),
-            }).then(() => {res.sendStatus(201)});
+            };
+
+            db.collection('messages').insertOne(loginMessage).then(() => {
+                console.log('Done!');
+                res.sendStatus(201);
+                console.log('Response sent!');
+            });
+            console.log('Saving login message...');
         });
-        
+        console.log('Saving participant...')
     });
+    console.log(`Searching for ${name} on database...`);
 });
 
 app.get('/participants', (req, res) => {
