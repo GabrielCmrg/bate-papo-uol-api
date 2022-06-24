@@ -63,9 +63,14 @@ app.post('/participants', async (req, res) => {
 app.get('/participants', async (req, res) => {
     console.log('GET request made to route /participants');
 
-    const participants = await db.collection('participants').find().toArray();
+    try {
+        const participants = await db.collection('participants').find().toArray();
 
-    return res.send(participants);
+        return res.send(participants);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
 });
 
 app.listen(process.env.PORT, () => {
