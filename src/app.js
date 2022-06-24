@@ -83,14 +83,27 @@ app.post('/messages', async (req, res) => {
         return res.sendStatus(422);
     }
 
-    try {
-        const { user } = req.headers;
+    const { user } = req.headers;
 
+    // this try/catch is part of validation, since the list of logged users must be done
+    // when the post is made.
+    try {
         const users = await db.collection('participants').find().toArray().map(p => p.name);
 
         if (!users.includes(user)) {
             return res.sendStatus(422);
         }
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+
+    try {
+        const message = {...req.body, from: user, time: dayjs().format('HH:mm:ss')};
+
+        await db.collection('messages').insertOne(message);
+
+        return res.sendStatus(201);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
