@@ -65,9 +65,13 @@ app.post('/participants', (req, res) => {
 });
 
 app.get('/participants', (req, res) => {
+    console.log('GET request made to route /participants');
     db.collection('participants').find().toArray().then(participants => {
+        console.log('Done!');
         res.send(participants);
+        console.log('Response sent!');
     });
+    console.log('Searching all participants...');
 });
 
 app.listen(process.env.PORT, () => {
