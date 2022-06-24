@@ -4,9 +4,13 @@ import dotenv from 'dotenv';
 import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+
 import { participantSchema, messageSchema, headerSchema } from './schemas.js';
 
 dotenv.config();
+
+dayjs.extend(customParseFormat);
 
 const app = express();
 app.use(express.json());
@@ -66,7 +70,7 @@ app.get('/participants', async (req, res) => {
     try {
         const participants = await db.collection('participants').find().toArray();
 
-        return res.send(participants);
+        return res.json(participants);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
@@ -108,6 +112,56 @@ app.post('/messages', async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
+    }
+});
+
+app.get('/messages', async (req, res) => {
+    console.log('GET request made to route /messages');
+
+    const validation = headerSchema.validate(req.headers);
+
+    if (validation.error) {
+        return res.sendStatus(422);
+    }
+
+    const { user } = req.headers;
+    const limit = req.query.limit;
+
+    try {
+        const allMessages = await db.collection('messages').find().toArray();
+        const allowedMessages = allMessages.filter(message => {
+            const isUserMessage = message.from === user;
+            const isMessageToUser = message.to === user;
+            const isPublicMessage = message.to === 'Todos';
+
+            if (isUserMessage || isMessageToUser || isPublicMessage) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        allowedMessages.sort((a, b) => {
+            const today = dayjs().format('DD/MM/YYYY') + '-';
+            const dateOfA = dayjs(today + a.time, 'DD/MM/YYYY-HH:mm:ss');
+            const dateOfB = dayjs(today + b.time, 'DD/MM/YYYY-HH:mm:ss');
+            if (dateOfA.isBefore(dateOfB)) return -1;
+            if (dateOfA.isAfter(dateOfB)) return 1;
+            return 0;
+        });
+
+        const limitNumber = parseInt(limit);
+
+        if (!limit) {
+            return res.json(allowedMessages);
+        } else if (isNaN(limitNumber)) {
+            return res.sendStatus(422);
+        }
+
+        return res.json(allowedMessages.slice(-limitNumber));
+    } catch (error) {
+        console.error(error);
+        res.sendStatus(500);
     }
 });
 
