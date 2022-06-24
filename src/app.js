@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 
-import { participantSchema, messageSchema } from './schemas.js';
+import { participantSchema, messageSchema, headerSchema } from './schemas.js';
 
 dotenv.config();
 
@@ -67,6 +67,30 @@ app.get('/participants', async (req, res) => {
         const participants = await db.collection('participants').find().toArray();
 
         return res.send(participants);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+app.post('/messages', async (req, res) => {
+    console.log('POST request made to route /messages');
+
+    const headerValidation = headerSchema.validate(req.headers);
+    const bodyValidation = messageSchema.validate(req.body);
+
+    if (headerValidation.error || bodyValidation.error) {
+        return res.sendStatus(422);
+    }
+
+    try {
+        const { user } = req.headers;
+
+        const users = await db.collection('participants').find().toArray().map(p => p.name);
+
+        if (!users.includes(user)) {
+            return res.sendStatus(422);
+        }
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);

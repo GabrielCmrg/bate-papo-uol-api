@@ -10,4 +10,8 @@ const messageSchema = joi.object({
     type: joi.string().valid('message', 'private_message').required(),
 });
 
-export { messageSchema, participantSchema };
+const headerSchema = joi.object({
+    user: joi.string().required(),
+}).unknown(true);
+
+export { messageSchema, participantSchema, headerSchema };
