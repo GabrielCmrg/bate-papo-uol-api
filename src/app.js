@@ -23,54 +23,49 @@ client.connect().then(() => {
     console.log('Database selected');
 });
 
-app.post('/participants', (req, res) => {
+app.post('/participants', async (req, res) => {
     console.log('POST request made to route /participants');
     const validation = participantSchema.validate(req.body);
 
     if (validation.error) {
-        res.sendStatus(422);
+        return res.sendStatus(422);
     }
-    
-    db.collection('participants').findOne({ name }).then(participant => {
-        console.log('Done!');
+
+    try {
+        const { name } = req.body;
+
+        const participant = await db.collection('participants').findOne({ name });
         if (participant !== null) {
-            console.log(`Participant ${name} already exists`);
-            res.sendStatus(409);
-            console.log('Response sent!');
-            return;
+            return res.sendStatus(409);
         }
 
-        db.collection('participants').insertOne({ name, lastStatus: Date.now() }).then(() => {
-            console.log('Done!');
+        await db.collection('participants').insertOne({ name, lastStatus: Date.now() });
+        console.log('New participant saved: ' + name);
 
-            const loginMessage = {
-                from: name,
-                to: 'Todos',
-                text: 'entra na sala...',
-                type: 'status',
-                time: dayjs().format('HH:mm:ss'),
-            };
+        const loginMessage = {
+            from: name,
+            to: 'Todos',
+            text: 'entra na sala...',
+            type: 'status',
+            time: dayjs().format('HH:mm:ss'),
+        };
 
-            db.collection('messages').insertOne(loginMessage).then(() => {
-                console.log('Done!');
-                res.sendStatus(201);
-                console.log('Response sent!');
-            });
-            console.log('Saving login message...');
-        });
-        console.log('Saving participant...')
-    });
-    console.log(`Searching for ${name} on database...`);
+        await db.collection('messages').insertOne(loginMessage);
+        console.log('Login message saved');
+
+        return res.sendStatus(201);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
 });
 
-app.get('/participants', (req, res) => {
+app.get('/participants', async (req, res) => {
     console.log('GET request made to route /participants');
-    db.collection('participants').find().toArray().then(participants => {
-        console.log('Done!');
-        res.send(participants);
-        console.log('Response sent!');
-    });
-    console.log('Searching all participants...');
+
+    const participants = await db.collection('participants').find().toArray();
+
+    return res.send(participants);
 });
 
 app.listen(process.env.PORT, () => {
