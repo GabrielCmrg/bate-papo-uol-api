@@ -165,6 +165,35 @@ app.get('/messages', async (req, res) => {
     }
 });
 
+app.post('/status', async (req, res) => {
+    console.log('POST request made to route /status');
+    
+    const validation = headerSchema.validate(req.headers);
+
+    if (validation.error) {
+        return res.sendStatus(422);
+    }
+
+    try {
+        const { user } = req.headers;
+        const { matchedCount, modifiedCount } = await db.collection('participants').updateOne(
+            { name: user },
+            { $set: { lastStatus: Date.now() }}
+        );
+
+        if (!matchedCount) {
+            return res.sendStatus(404);
+        } else if (modifiedCount) {
+            console.log('Updated lastStatus of ' +  user);
+            return res.sendStatus(200);
+        }
+
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 app.listen(process.env.PORT, () => {
     console.log(`App running on:\nhttp://localhost:${process.env.PORT}\nhttp://127.0.0.1:${process.env.PORT}`);
 });
