@@ -102,6 +102,7 @@ app.post('/messages', async (req, res) => {
         const message = {...req.body, from: user, time: dayjs().format('HH:mm:ss')};
 
         await db.collection('messages').insertOne(message);
+        console.log('Message saved');
 
         return res.sendStatus(201);
     } catch (error) {
