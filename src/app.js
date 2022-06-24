@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 
+import { participantSchema, messageSchema } from './schemas.js';
+
 dotenv.config();
 
 const app = express();
@@ -23,15 +25,12 @@ client.connect().then(() => {
 
 app.post('/participants', (req, res) => {
     console.log('POST request made to route /participants');
-    const { name } = req.body;
-    
-    if (typeof(name) !== 'string' || name.length === 0) {
-        console.log('Name key received is invalid');
-        res.sendStatus(422);
-        console.log('Response sent!');
-        return;
-    }
+    const validation = participantSchema.validate(req.body);
 
+    if (validation.error) {
+        res.sendStatus(422);
+    }
+    
     db.collection('participants').findOne({ name }).then(participant => {
         console.log('Done!');
         if (participant !== null) {
