@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
+import { stripHtml } from 'string-strip-html';
 
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 
