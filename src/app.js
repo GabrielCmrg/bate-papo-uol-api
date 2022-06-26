@@ -89,7 +89,8 @@ app.post('/messages', async (req, res) => {
         return res.sendStatus(422);
     }
 
-    const { user } = req.headers;
+    const receivedUser = req.headers.user;
+    const user = stripHtml(receivedUser);
 
     // this try/catch is part of validation, since the list of logged users must be done
     // when the post is made.
@@ -105,7 +106,15 @@ app.post('/messages', async (req, res) => {
     }
 
     try {
-        const message = {...req.body, from: user, time: dayjs().format('HH:mm:ss')};
+        const { to, text, type } = req.body;
+        
+        const message = {
+            to: stripHtml(to),
+            text: stripHtml(text),
+            type: stripHtml(type),
+            from: user,
+            time: dayjs().format('HH:mm:ss'),
+        };
 
         await db.collection('messages').insertOne(message);
         console.log('Message saved');
@@ -126,7 +135,8 @@ app.get('/messages', async (req, res) => {
         return res.sendStatus(422);
     }
 
-    const { user } = req.headers;
+    const receiveduser = req.headers.user;
+    const user = stripHtml(receiveduser);
     const limit = req.query.limit;
 
     try {
@@ -177,16 +187,18 @@ app.post('/status', async (req, res) => {
     }
 
     try {
-        const { user } = req.headers;
+        const user = req.headers.user;
+        const name = stripHtml(user);
+
         const { matchedCount, modifiedCount } = await db.collection('participants').updateOne(
-            { name: user },
+            { name },
             { $set: { lastStatus: Date.now() }}
         );
 
         if (!matchedCount) {
             return res.sendStatus(404);
         } else if (modifiedCount) {
-            console.log('Updated lastStatus of ' +  user);
+            console.log('Updated lastStatus of ' +  name);
             return res.sendStatus(200);
         }
 
