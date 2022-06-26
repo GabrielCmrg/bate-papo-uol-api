@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import dayjs from 'dayjs';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { stripHtml } from 'string-strip-html';
 
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
@@ -95,9 +95,10 @@ app.post('/messages', async (req, res) => {
     // this try/catch is part of validation, since the list of logged users must be done
     // when the post is made.
     try {
-        const users = await db.collection('participants').find().toArray().map(p => p.name);
+        const users = await db.collection('participants').find().toArray();
+        const userNames = users.map(p => p.name);
 
-        if (!users.includes(user)) {
+        if (!userNames.includes(user)) {
             return res.sendStatus(422);
         }
     } catch (error) {
@@ -173,7 +174,40 @@ app.get('/messages', async (req, res) => {
         return res.json(allowedMessages.slice(-limitNumber));
     } catch (error) {
         console.error(error);
-        res.sendStatus(500);
+        return res.sendStatus(500);
+    }
+});
+
+app.delete('/messages/:messageId', async (req, res) => {
+    const messageId = req.params.messageId;
+    console.log('DELETE request made to route /messages/' + messageId);
+    const validation = headerSchema.validate(req.headers);
+
+    if (validation.error || !messageId) {
+        return res.sendStatus(422);
+    }
+
+    const receivedUser = req.headers.user;
+    const name = stripHtml(receivedUser).result;
+
+    try {
+        const messageToDelete = await db.collection('messages').findOne({ _id: new ObjectId(messageId)});
+
+        if (messageToDelete === null) {
+            return res.sendStatus(404);
+        }
+
+        if (name !== messageToDelete.from) {
+            return res.sendStatus(401);
+        }
+
+        await db.collection('messages').deleteOne({ _id: new ObjectId(messageId) });
+        console.log('Deleted message');
+
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
     }
 });
 
