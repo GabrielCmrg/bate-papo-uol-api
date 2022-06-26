@@ -145,7 +145,7 @@ app.get('/messages', async (req, res) => {
         const allowedMessages = allMessages.filter(message => {
             const isUserMessage = message.from === user;
             const isMessageToUser = message.to === user;
-            const isPublicMessage = message.to === 'Todos';
+            const isPublicMessage = message.to === 'Todos' || message.type === 'message';
 
             if (isUserMessage || isMessageToUser || isPublicMessage) {
                 return true;
