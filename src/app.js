@@ -178,6 +178,62 @@ app.get('/messages', async (req, res) => {
     }
 });
 
+app.put('/messages/:messageId', async (req, res) => {
+    const messageId = req.params.messageId;
+    console.log('PUT request made to route /messages/' + messageId);
+    const headerValidation = headerSchema.validate(req.headers);
+    const bodyValidation = messageSchema.validate(req.body);
+
+    if (headerValidation.error || bodyValidation.error ||!messageId) {
+        return res.sendStatus(422);
+    }
+
+    const receivedUser = req.headers.user;
+    const from = stripHtml(receivedUser).result;
+
+    // this try/catch is part of validation, since the list of logged users must be done
+    // when the put is made.
+    try {
+        const users = await db.collection('participants').find().toArray();
+        const userNames = users.map(p => p.name);
+
+        if (!userNames.includes(from)) {
+            return res.sendStatus(422);
+        }
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+
+    try {
+        const { to, text, type } = req.body;
+
+        const messageToUpdate = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
+
+        if (messageToUpdate === null) {
+            return res.sendStatus(404);
+        }
+
+        if (from !== messageToUpdate.from) {
+            return res.sendStatus(401);
+        }
+
+        const message = {
+            from,
+            to: stripHtml(to).result,
+            text: stripHtml(text).result,
+            type: stripHtml(type).result,
+            time: dayjs().format('HH:mm:ss'),
+        }
+
+        await db.collection('messsages').replaceOne(messageToUpdate, message);
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 app.delete('/messages/:messageId', async (req, res) => {
     const messageId = req.params.messageId;
     console.log('DELETE request made to route /messages/' + messageId);
