@@ -194,6 +194,28 @@ app.post('/status', async (req, res) => {
     }
 });
 
+setInterval(async () => {
+    const iddleParticipants = await db.collection('participants').find({
+        lastStatus: { $lt: (Date.now() - 10_000) },
+    }).toArray();
+    
+    for (const participant of iddleParticipants) {
+        await db.collection('participants').deleteOne(participant);
+        console.log('Deleted participant: ' + participant.name);
+
+        const logoutMessage = {
+            from: participant.name,
+            to: 'Todos',
+            text: 'sai da sala...',
+            type: 'status',
+            time: dayjs().format('HH:mm:ss'),
+        };
+
+        await db.collection('messages').insertOne(logoutMessage);
+        console.log('Saved logout message');
+    }
+}, 15_000);
+
 app.listen(process.env.PORT, () => {
     console.log(`App running on:\nhttp://localhost:${process.env.PORT}\nhttp://127.0.0.1:${process.env.PORT}`);
 });
