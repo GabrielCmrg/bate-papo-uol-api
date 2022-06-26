@@ -38,7 +38,7 @@ app.post('/participants', async (req, res) => {
 
     try {
         const receivedName = req.body.name;
-        const name = stripHtml(receivedName);
+        const name = stripHtml(receivedName).result;
 
         const participant = await db.collection('participants').findOne({ name });
         if (participant !== null) {
@@ -90,7 +90,7 @@ app.post('/messages', async (req, res) => {
     }
 
     const receivedUser = req.headers.user;
-    const user = stripHtml(receivedUser);
+    const user = stripHtml(receivedUser).result;
 
     // this try/catch is part of validation, since the list of logged users must be done
     // when the post is made.
@@ -109,9 +109,9 @@ app.post('/messages', async (req, res) => {
         const { to, text, type } = req.body;
         
         const message = {
-            to: stripHtml(to),
-            text: stripHtml(text),
-            type: stripHtml(type),
+            to: stripHtml(to).result,
+            text: stripHtml(text).result,
+            type: stripHtml(type).result,
             from: user,
             time: dayjs().format('HH:mm:ss'),
         };
@@ -136,7 +136,7 @@ app.get('/messages', async (req, res) => {
     }
 
     const receiveduser = req.headers.user;
-    const user = stripHtml(receiveduser);
+    const user = stripHtml(receiveduser).result;
     const limit = req.query.limit;
 
     try {
@@ -188,7 +188,7 @@ app.post('/status', async (req, res) => {
 
     try {
         const user = req.headers.user;
-        const name = stripHtml(user);
+        const name = stripHtml(user).result;
 
         const { matchedCount, modifiedCount } = await db.collection('participants').updateOne(
             { name },
