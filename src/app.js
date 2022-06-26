@@ -37,7 +37,8 @@ app.post('/participants', async (req, res) => {
     }
 
     try {
-        const { name } = req.body;
+        const receivedName = req.body.name;
+        const name = stripHtml(receivedName);
 
         const participant = await db.collection('participants').findOne({ name });
         if (participant !== null) {
