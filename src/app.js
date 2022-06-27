@@ -30,6 +30,12 @@ client.connect().then(() => {
 
 app.post('/participants', async (req, res) => {
     console.log('POST request made to route /participants');
+
+    const valid = participantSchema.validate(req.body);
+    if (valid.error) {
+        return res.sendStatus(422);
+    }
+
     const body = { name: stripHtml(req.body.name).result }
     const validation = participantSchema.validate(body);
 
@@ -82,15 +88,27 @@ app.get('/participants', async (req, res) => {
 app.post('/messages', async (req, res) => {
     console.log('POST request made to route /messages');
 
-    const headerValidation = headerSchema.validate(req.headers);
-    const bodyValidation = messageSchema.validate(req.body);
+    const headerValid = headerSchema.validate(req.headers);
+    const bodyValid = messageSchema.validate(req.body);
+    if (headerValid.error || bodyValid.error) {
+        return res.sendStatus(422);
+    }
+
+    const header = { user: stripHtml(req.headers.user).result };
+    const body = {
+        to: stripHtml(req.body.to).result,
+        text: stripHtml(req.body.text).result,
+        type: stripHtml(req.body.type).result,
+    };
+
+    const headerValidation = headerSchema.validate(header);
+    const bodyValidation = messageSchema.validate(body);
 
     if (headerValidation.error || bodyValidation.error) {
         return res.sendStatus(422);
     }
 
-    const receivedUser = req.headers.user;
-    const user = stripHtml(receivedUser).result;
+    const { user } = headerValidation.value;
 
     // this try/catch is part of validation, since the list of logged users must be done
     // when the post is made.
@@ -106,13 +124,9 @@ app.post('/messages', async (req, res) => {
         return res.sendStatus(500);
     }
 
-    try {
-        const { to, text, type } = req.body;
-        
+    try {        
         const message = {
-            to: stripHtml(to).result,
-            text: stripHtml(text).result,
-            type: stripHtml(type).result,
+            ...bodyValidation.value,
             from: user,
             time: dayjs().format('HH:mm:ss'),
         };
@@ -130,14 +144,20 @@ app.post('/messages', async (req, res) => {
 app.get('/messages', async (req, res) => {
     console.log('GET request made to route /messages');
 
-    const validation = headerSchema.validate(req.headers);
+    const valid = headerSchema.validate(req.headers);
+    if (valid.error) {
+        return res.sendStatus(422);
+    }
+
+    const header = { user: stripHtml(req.headers.user).result }
+
+    const validation = headerSchema.validate(header);
 
     if (validation.error) {
         return res.sendStatus(422);
     }
 
-    const receiveduser = req.headers.user;
-    const user = stripHtml(receiveduser).result;
+    const { user } = validation.value;
     const limit = req.query.limit;
 
     try {
@@ -181,15 +201,28 @@ app.get('/messages', async (req, res) => {
 app.put('/messages/:messageId', async (req, res) => {
     const messageId = req.params.messageId;
     console.log('PUT request made to route /messages/' + messageId);
-    const headerValidation = headerSchema.validate(req.headers);
-    const bodyValidation = messageSchema.validate(req.body);
+
+    const headerValid = headerSchema.validate(req.headers);
+    const bodyValid = messageSchema.validate(req.body);
+    if (headerValid.error || bodyValid.error) {
+        return res.sendStatus(422);
+    }
+
+    const header = { user: stripHtml(req.headers.user).result };
+    const body = {
+        to: stripHtml(req.body.to).result,
+        text: stripHtml(req.body.text).result,
+        type: stripHtml(req.body,type).result,
+    };
+
+    const headerValidation = headerSchema.validate(header);
+    const bodyValidation = messageSchema.validate(body);
 
     if (headerValidation.error || bodyValidation.error || !messageId) {
         return res.sendStatus(422);
     }
 
-    const receivedUser = req.headers.user;
-    const from = stripHtml(receivedUser).result;
+    const from = headerValidation.value.user;
 
     // this try/catch is part of validation, since the list of logged users must be done
     // when the put is made.
@@ -206,8 +239,6 @@ app.put('/messages/:messageId', async (req, res) => {
     }
 
     try {
-        const { to, text, type } = req.body;
-
         const messageToUpdate = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
 
         if (messageToUpdate === null) {
@@ -219,10 +250,8 @@ app.put('/messages/:messageId', async (req, res) => {
         }
 
         const message = {
+            ...bodyValidation.value,
             from,
-            to: stripHtml(to).result,
-            text: stripHtml(text).result,
-            type: stripHtml(type).result,
             time: dayjs().format('HH:mm:ss'),
         }
 
@@ -237,14 +266,20 @@ app.put('/messages/:messageId', async (req, res) => {
 app.delete('/messages/:messageId', async (req, res) => {
     const messageId = req.params.messageId;
     console.log('DELETE request made to route /messages/' + messageId);
-    const validation = headerSchema.validate(req.headers);
+
+    const valid = headerSchema.validate(req.headers);
+    if (valid.error) {
+        return res.sendStatus(422);
+    }
+
+    const header = { user: stripHtml(req.headers.user).result };
+    const validation = headerSchema.validate(header);
 
     if (validation.error || !messageId) {
         return res.sendStatus(422);
     }
 
-    const receivedUser = req.headers.user;
-    const name = stripHtml(receivedUser).result;
+    const name = validation.value.user;
 
     try {
         const messageToDelete = await db.collection('messages').findOne({ _id: new ObjectId(messageId)});
@@ -269,16 +304,21 @@ app.delete('/messages/:messageId', async (req, res) => {
 
 app.post('/status', async (req, res) => {
     console.log('POST request made to route /status');
-    
-    const validation = headerSchema.validate(req.headers);
+
+    const valid = headerSchema.validate(req.headers);
+    if (valid.error) {
+        return res.sendStatus(422);
+    }
+
+    const header = { user: stripHtml(req.headers.user).result };
+    const validation = headerSchema.validate(header);
 
     if (validation.error) {
         return res.sendStatus(422);
     }
 
     try {
-        const user = req.headers.user;
-        const name = stripHtml(user).result;
+        const name = validation.value.user;
 
         const { matchedCount, modifiedCount } = await db.collection('participants').updateOne(
             { name },
