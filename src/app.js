@@ -212,7 +212,7 @@ app.put('/messages/:messageId', async (req, res) => {
     const body = {
         to: stripHtml(req.body.to).result,
         text: stripHtml(req.body.text).result,
-        type: stripHtml(req.body,type).result,
+        type: stripHtml(req.body.type).result,
     };
 
     const headerValidation = headerSchema.validate(header);
